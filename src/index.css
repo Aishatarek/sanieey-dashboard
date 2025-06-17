@@ -1,0 +1,59 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+	html {
+		font-family: 'DM Sans', sans-serif !important;
+		font-feature-settings: 'kern' !important;
+		-webkit-font-smoothing: antialiased;
+		letter-spacing: -0.5px;
+	}
+}
+.cardSign{
+	text-align: center;
+	/* background-color: white; */
+}
+.cardSign img{
+	width: 100px;
+	margin: auto;
+}
+input.defaultCheckbox::before {
+	content: url(../src/assets/svg/checked.svg); 
+	color: white;
+	opacity: 0; 
+	height: 16px; 
+	width: 16px;
+	position: absolute; 
+	left: 50%;
+	transform: translate(-50%, 0px);
+} 
+a{
+	text-decoration: none !important;
+}
+.dark .dark\:shadow-none{
+	background-color: #ed5b27 !important;
+}
+.dark .bg-lightPrimary {
+	background-color: #191919 !important;
+}
+.text-brand-500{
+	color: #ed5b27 !important;
+}
+input:checked.defaultCheckbox::before { 
+	opacity: 1;
+}
+
+
+form input,form select,form textarea{
+	width: 95% !important;
+	margin-top: 20px !important;
+	border-radius: 20px;
+	display: block;
+	padding: 10px;
+	margin: auto;
+	border: 1px solid rgba(66, 42, 251, 0.236);
+	background-color: white;
+}
