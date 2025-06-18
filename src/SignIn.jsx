@@ -11,7 +11,7 @@ export default function SignIn() {
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (token) {
-      window.location.href = "/admin/messages";
+      window.location.href = "/admin/home";
     }
   }, []);
 
@@ -20,13 +20,12 @@ export default function SignIn() {
     setError("");
 
     try {
-      const response = await fetch("http://sani3ywebapiv1.runasp.net/api/UserAuth/signin-normal", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
+      const response = await fetch("https://sani3ywebapiv1.runasp.net/api/UserAuth/signin-normal", {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+
         body: JSON.stringify({
-          EmailOrPhone:email,
+          emailOrPhone:email,
           password
         })
       });
@@ -35,7 +34,7 @@ export default function SignIn() {
 
       if (response.ok && data.accessToken) {
         localStorage.setItem("token", data.accessToken);
-        window.location.href = "/admin/messages";
+        window.location.href = "/admin/home";
       } else {
         setError(data.message || "Invalid email or password.");
       }

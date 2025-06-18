@@ -63,8 +63,9 @@ export default function Admin(props) {
       <div className="h-full w-full bg-lightPrimary darknavy">
         {/* Main Content */}
         <main
-          className={`mx-[12px] h-full flex-none transition-all md:pr-2 xl:ml-[313px]`}
-        >
+  dir="rtl"
+  className={`mx-[12px] h-full flex-none transition-all md:pl-2 xl:mr-[313px]`}
+>
           {/* Routes */}
           <div className="h-full">
             <Navbar

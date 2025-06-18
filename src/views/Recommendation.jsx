@@ -1,321 +1,225 @@
 import React, { useState, useEffect } from "react";
 import Card from "components/card";
+import Swal from "sweetalert2";
 
 const Recommendation = () => {
-  const [recommendations, setRecommendations] = useState([]);
-  const [selectedRec, setSelectedRec] = useState(null);
+  const [pendingRecommendations, setPendingRecommendations] = useState([]);
+  const [selectedRecommendation, setSelectedRecommendation] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [craftsmanData, setCraftsmanData] = useState({
-    FirstName: "",
-    LastName: "",
-    Governorate: "",
-    Location: "",
-    ProfessionId: "",
-    PhoneNumber: "",
-    Email: "",
-    Password: "",
-    CardImage: null,
-    ProfileImage: null,
-  });
-
   const token = localStorage.getItem("token");
 
-  const fetchRecommendations = async () => {
-    if (!token) return console.error("No token found in localStorage");
-    setLoading(true);
-    try {
-      const res = await fetch(
-        "http://sani3ywebapiv1.runasp.net/api/Recommendation/pending-recommendations",
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      if (!res.ok) throw new Error(`Failed: ${res.status}`);
-      const data = await res.json();
-      setRecommendations(data);
-    } catch (err) {
-      console.error(err);
-    }
-    setLoading(false);
+  const showAlert = (icon, title, text) => {
+    Swal.fire({
+      icon,
+      title,
+      text,
+      confirmButtonText: 'حسناً'
+    });
   };
 
-  const fetchRecommendationById = async (id) => {
-    if (!token) return console.error("No token found in localStorage");
+  const fetchPendingRecommendations = async () => {
+    setLoading(true);
     try {
-      const res = await fetch(
-        `http://sani3ywebapiv1.runasp.net/api/Recommendation/recommendation/${id}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
+      const response = await fetch('https://sani3ywebapiv1.runasp.net/api/Recommendation/pending-recommendations', {
+        headers: {
+          'Authorization': `Bearer ${token}`
         }
-      );
-      if (!res.ok) throw new Error(`Failed: ${res.status}`);
-      const data = await res.json();
-      setSelectedRec(data);
-    } catch (err) {
-      console.error(err);
+      });
+      
+      if (!response.ok) {
+        throw new Error('فشل في جلب البيانات');
+      }
+      
+      const data = await response.json();
+      setPendingRecommendations(data);
+    } catch (error) {
+      console.error('خطأ في جلب التوصيات المعلقة:', error);
+      showAlert('error', 'خطأ', 'حدث خطأ أثناء جلب التوصيات المعلقة');
+    } finally {
+      setLoading(false);
     }
   };
 
   const approveRecommendation = async (id) => {
-    if (!token) return console.error("No token found in localStorage");
     try {
-      const res = await fetch(
-        `http://sani3ywebapiv1.runasp.net/api/Recommendation/approve/${id}`,
-        {
-          method: "POST",
-          headers: { Authorization: `Bearer ${token}` },
+      const result = await Swal.fire({
+        title: 'هل أنت متأكد؟',
+        text: 'هل تريد الموافقة على هذه التوصية؟',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'نعم، أوافق',
+        cancelButtonText: 'إلغاء',
+        reverseButtons: true
+      });
+      
+      if (result.isConfirmed) {
+        const response = await fetch(`https://sani3ywebapiv1.runasp.net/api/Recommendation/approve/${id}`, { 
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error('فشل في الموافقة على التوصية');
         }
-      );
-      if (!res.ok) throw new Error(`Failed: ${res.status}`);
-      alert("Recommendation approved");
-      fetchRecommendations(); // refresh list
-      setSelectedRec(null);
-    } catch (err) {
-      console.error(err);
+        
+        fetchPendingRecommendations();
+        showAlert('success', 'تمت الموافقة', 'تمت الموافقة على التوصية بنجاح');
+      }
+    } catch (error) {
+      console.error('خطأ في الموافقة على التوصية:', error);
+      showAlert('error', 'خطأ', 'حدث خطأ أثناء الموافقة على التوصية');
     }
   };
 
   const rejectRecommendation = async (id) => {
-    if (!token) return console.error("No token found in localStorage");
     try {
-      const res = await fetch(
-        `http://sani3ywebapiv1.runasp.net/api/Recommendation/reject/${id}`,
-        {
-          method: "POST",
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      if (!res.ok) throw new Error(`Failed: ${res.status}`);
-      alert("Recommendation rejected");
-      fetchRecommendations(); // refresh list
-      setSelectedRec(null);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  // Handle form change for craftsman data
-  const handleCraftsmanChange = (e) => {
-    const { name, value, files } = e.target;
-    if (files) {
-      setCraftsmanData((prev) => ({ ...prev, [name]: files[0] }));
-    } else {
-      setCraftsmanData((prev) => ({ ...prev, [name]: value }));
-    }
-  };
-
-  // Add craftsman to recommendation
-  const addCraftsman = async (recommendationId) => {
-    if (!token) return console.error("No token found in localStorage");
-
-    const formData = new FormData();
-    for (const key in craftsmanData) {
-      if (craftsmanData[key]) formData.append(key, craftsmanData[key]);
-    }
-
-    try {
-      const res = await fetch(
-        `http://sani3ywebapiv1.runasp.net/api/Recommendation/add-craftsman/${recommendationId}`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          body: formData,
-        }
-      );
-      if (!res.ok) throw new Error(`Failed: ${res.status}`);
-      alert("Craftsman added successfully");
-      setCraftsmanData({
-        FirstName: "",
-        LastName: "",
-        Governorate: "",
-        Location: "",
-        ProfessionId: "",
-        PhoneNumber: "",
-        Email: "",
-        Password: "",
-        CardImage: null,
-        ProfileImage: null,
+      const result = await Swal.fire({
+        title: 'هل أنت متأكد؟',
+        text: 'هل تريد رفض هذه التوصية؟',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'نعم، ارفض',
+        cancelButtonText: 'إلغاء',
+        reverseButtons: true,
+        confirmButtonColor: '#d33'
       });
-      fetchRecommendations();
-      setSelectedRec(null);
-    } catch (err) {
-      console.error(err);
+      
+      if (result.isConfirmed) {
+        const response = await fetch(`https://sani3ywebapiv1.runasp.net/api/Recommendation/reject/${id}`, { 
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error('فشل في رفض التوصية');
+        }
+        
+        fetchPendingRecommendations();
+        showAlert('success', 'تم الرفض', 'تم رفض التوصية بنجاح');
+      }
+    } catch (error) {
+      console.error('خطأ في رفض التوصية:', error);
+      showAlert('error', 'خطأ', 'حدث خطأ أثناء رفض التوصية');
     }
+  };
+
+  const showRecommendationDetails = (recommendation) => {
+    Swal.fire({
+      title: `تفاصيل التوصية #${recommendation.id}`,
+      html: `
+        <div class="text-right">
+          <p><strong>اسم الحرفي:</strong> ${recommendation.craftsmanFirstName} ${recommendation.craftsmanLastName}</p>
+          <p><strong>المحافظة:</strong> ${recommendation.governorate}</p>
+          <p><strong>الموقع:</strong> ${recommendation.location}</p>
+          <p><strong>رقم الهاتف:</strong> ${recommendation.phoneNumber}</p>
+          <p><strong>الحرفة:</strong> ${recommendation.professionName}</p>
+          <p><strong>وصف العمل السابق:</strong> ${recommendation.previousWorkDescription}</p>
+          <p><strong>تاريخ انتهاء المشروع:</strong> ${new Date(recommendation.dateTheProjectDone).toLocaleDateString()}</p>
+          
+          ${recommendation.previousWorkPicturePaths && recommendation.previousWorkPicturePaths.length > 0 ? `
+            <div class="mt-3">
+              <strong>صور العمل السابق:</strong>
+              <div class="grid grid-cols-2 gap-2 mt-2">
+                ${recommendation.previousWorkPicturePaths.map(img => `
+                  <img src="https://sani3ywebapiv1.runasp.net${img}" class="w-full h-24 object-cover rounded border" />
+                `).join('')}
+              </div>
+            </div>
+          ` : ''}
+        </div>
+      `,
+      width: '800px',
+      showConfirmButton: false,
+      showCloseButton: true
+    });
   };
 
   useEffect(() => {
-    fetchRecommendations();
+    fetchPendingRecommendations();
   }, []);
 
   return (
     <div className="mt-5">
-      <Card extra="w-full pb-10 p-4 h-full">
-        <header className="flex items-center justify-between">
-          <h2 className="text-xl font-bold text-navy-700 dark:text-white">
-            Pending Recommendations
-          </h2>
-        </header>
-
-        {loading && <p>Loading...</p>}
-
-        {!selectedRec && (
-          <div className="mt-8 overflow-x-auto">
-            <table className="w-full whitespace-nowrap">
-              <thead>
-                <tr className="bg-gray-100 dark:bg-gray-800">
-                  <th className="py-4 px-8 text-left">ID</th>
-                  <th className="py-4 px-8 text-left">Title</th>
-                  <th className="py-4 px-8 text-left">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {recommendations.map((rec) => (
-                  <tr key={rec.id} className="border-b dark:border-gray-700">
-                    <td className="py-4 px-8">{rec.id}</td>
-                    <td className="py-4 px-8">{rec.title || rec.name || "No title"}</td>
-                    <td className="py-4 px-8">
-                      <button
-                        className="mr-2 text-blue-600"
-                        onClick={() => fetchRecommendationById(rec.id)}
-                      >
-                        View
-                      </button>
-                      <button
-                        className="mr-2 text-green-600"
-                        onClick={() => approveRecommendation(rec.id)}
-                      >
-                        Approve
-                      </button>
-                      <button
-                        className="text-red-600"
-                        onClick={() => rejectRecommendation(rec.id)}
-                      >
-                        Reject
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      <Card extra={"w-full p-4"}>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold">إدارة التوصيات</h1>
+          <button 
+            onClick={fetchPendingRecommendations}
+            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+          >
+            تحديث البيانات
+          </button>
+        </div>
+        
+        {loading ? (
+          <div className="flex justify-center items-center py-8">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
           </div>
-        )}
-
-        {selectedRec && (
-          <div className="mt-8">
-            <button
-              className="mb-4 text-gray-500 underline"
-              onClick={() => setSelectedRec(null)}
-            >
-              ← Back to list
-            </button>
-
-            <h3 className="text-lg font-bold mb-4">Recommendation Details (ID: {selectedRec.id})</h3>
-            <pre className="whitespace-pre-wrap bg-gray-100 p-4 rounded">{JSON.stringify(selectedRec, null, 2)}</pre>
-
-            <h4 className="mt-6 mb-2 font-semibold">Add Craftsman</h4>
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                addCraftsman(selectedRec.id);
-              }}
-              className="space-y-4"
-            >
-              <input
-                name="FirstName"
-                value={craftsmanData.FirstName}
-                onChange={handleCraftsmanChange}
-                placeholder="First Name"
-                required
-                className="input-field"
-              />
-              <input
-                name="LastName"
-                value={craftsmanData.LastName}
-                onChange={handleCraftsmanChange}
-                placeholder="Last Name"
-                required
-                className="input-field"
-              />
-              <input
-                name="Governorate"
-                value={craftsmanData.Governorate}
-                onChange={handleCraftsmanChange}
-                placeholder="Governorate"
-                required
-                className="input-field"
-              />
-              <input
-                name="Location"
-                value={craftsmanData.Location}
-                onChange={handleCraftsmanChange}
-                placeholder="Location"
-                required
-                className="input-field"
-              />
-              <input
-                name="ProfessionId"
-                value={craftsmanData.ProfessionId}
-                onChange={handleCraftsmanChange}
-                placeholder="Profession Id"
-                type="number"
-                required
-                className="input-field"
-              />
-              <input
-                name="PhoneNumber"
-                value={craftsmanData.PhoneNumber}
-                onChange={handleCraftsmanChange}
-                placeholder="Phone Number"
-                required
-                className="input-field"
-              />
-              <input
-                name="Email"
-                value={craftsmanData.Email}
-                onChange={handleCraftsmanChange}
-                placeholder="Email"
-                type="email"
-                required
-                className="input-field"
-              />
-              <input
-                name="Password"
-                value={craftsmanData.Password}
-                onChange={handleCraftsmanChange}
-                placeholder="Password"
-                type="password"
-                required
-                className="input-field"
-              />
-              <label>
-                Card Image:
-                <input
-                  type="file"
-                  name="CardImage"
-                  onChange={handleCraftsmanChange}
-                  accept="image/*"
-                  required
-                />
-              </label>
-              <label>
-                Profile Image:
-                <input
-                  type="file"
-                  name="ProfileImage"
-                  onChange={handleCraftsmanChange}
-                  accept="image/*"
-                  required
-                />
-              </label>
-              <button
-                type="submit"
-                className="mt-2 px-4 py-2 bg-blue-600 text-white rounded"
-              >
-                Add Craftsman
-              </button>
-            </form>
+        ) : (
+          <div className="overflow-x-auto">
+            {pendingRecommendations.length === 0 ? (
+              <p className="text-gray-500 text-center py-8">لا توجد توصيات معلقة حالياً</p>
+            ) : (
+              <table className="w-full text-right border-collapse">
+                <thead>
+                  <tr className="bg-gray-100">
+                    <th className="p-3 border">#</th>
+                    <th className="p-3 border">اسم الحرفي</th>
+                    <th className="p-3 border">الحرفة</th>
+                    <th className="p-3 border">المحافظة</th>
+                    <th className="p-3 border">رقم الهاتف</th>
+                    <th className="p-3 border">الحالة</th>
+                    <th className="p-3 border">الإجراءات</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pendingRecommendations.map((recommendation) => (
+                    <tr key={recommendation.id} className="hover:bg-gray-50">
+                      <td className="p-3 border">{recommendation.id}</td>
+                      <td className="p-3 border">{recommendation.craftsmanFirstName} {recommendation.craftsmanLastName}</td>
+                      <td className="p-3 border">{recommendation.professionName}</td>
+                      <td className="p-3 border">{recommendation.governorate}</td>
+                      <td className="p-3 border">{recommendation.phoneNumber}</td>
+                      <td className="p-3 border">
+                        <span className={`px-2 py-1 rounded-full text-xs ${
+                          recommendation.status === 0 ? 'bg-yellow-100 text-yellow-800' : 
+                          recommendation.status === 1 ? 'bg-green-100 text-green-800' : 
+                          'bg-red-100 text-red-800'
+                        }`}>
+                          {recommendation.status === 0 ? 'معلقة' : recommendation.status === 1 ? 'مقبولة' : 'مرفوضة'}
+                        </span>
+                      </td>
+                      <td className="p-3 border">
+                        <div className="flex gap-2 justify-end">
+                          <button
+                            onClick={() => showRecommendationDetails(recommendation)}
+                            className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                          >
+                            التفاصيل
+                          </button>
+                          <button
+                            onClick={() => approveRecommendation(recommendation.id)}
+                            className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
+                          >
+                            قبول
+                          </button>
+                          <button
+                            onClick={() => rejectRecommendation(recommendation.id)}
+                            className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
+                          >
+                            رفض
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         )}
       </Card>

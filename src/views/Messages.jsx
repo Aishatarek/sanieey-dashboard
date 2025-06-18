@@ -1,76 +1,116 @@
 import React, { useState, useEffect } from "react";
 import Card from "components/card";
+import Swal from "sweetalert2";
 
 const Messages = () => {
   const [messages, setMessages] = useState([]);
+  const [loading, setLoading] = useState(false);
+
   useEffect(() => {
-    // Get the token from localStorage
     const token = localStorage.getItem("token");
-  
+
     if (!token) {
-      console.error("No token found in localStorage");
+      console.error("لم يتم العثور على توكن في التخزين المحلي");
+      Swal.fire({
+        icon: "error",
+        title: "خطأ",
+        text: "لم يتم العثور على توكن التوثيق",
+        confirmButtonText: "حسناً",
+      });
       return;
     }
-  
-    fetch("http://sani3ywebapiv1.runasp.net/api/AdminDashboard/GetContactMessages", {
-      method: "GET",
-      headers: {
-        "Authorization": `Bearer ${token}`,
-        "Accept": "application/json", // Use "application/json" not "text/plain"
-      },
-    })
-      .then((res) => {
+
+    const fetchMessages = async () => {
+      setLoading(true);
+      try {
+        const res = await fetch(
+          "https://sani3ywebapiv1.runasp.net/api/AdminDashboard/GetContactMessages",
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              Accept: "application/json",
+            },
+          }
+        );
+
         if (!res.ok) {
-          throw new Error(`Request failed: ${res.status}`);
+          throw new Error(`فشل الطلب: ${res.status}`);
         }
-        return res.json();
-      })
-      .then((data) => {
+
+        const data = await res.json();
         setMessages(data);
-      })
-      .catch((err) => {
-        console.error("Fetch error:", err);
-      });
+      } catch (err) {
+        console.error("خطأ في جلب الرسائل:", err);
+        Swal.fire({
+          icon: "error",
+          title: "خطأ",
+          text: "حدث خطأ أثناء جلب الرسائل",
+          confirmButtonText: "حسناً",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMessages();
   }, []);
-  
-  
+
   return (
     <div className="mt-5">
       <Card extra="w-full pb-10 p-4 h-full">
         <header className="flex items-center justify-between">
           <h2 className="text-xl font-bold text-navy-700 dark:text-white">
-            Contact Messages
+            رسائل التواصل
           </h2>
         </header>
 
-        <div className="mt-8 overflow-x-auto">
-          <table className="w-full whitespace-nowrap">
-            <thead>
-              <tr className="bg-gray-100 dark:bg-gray-800">
-                <th className="py-4 px-8 text-left">Name</th>
-                <th className="py-4 px-8 text-left">Email</th>
-                <th className="py-4 px-8 text-left">Phone</th>
-                <th className="py-4 px-8 text-left">Message</th>
-                <th className="py-4 px-8 text-left">Request #</th>
-                <th className="py-4 px-8 text-left">Sent At</th>
-                <th className="py-4 px-8 text-left">Resolved</th>
-              </tr>
-            </thead>
-            <tbody>
-              {messages.map((msg) => (
-                <tr key={msg.id} className="border-b dark:border-gray-700">
-                  <td className="py-4 px-8">{msg.name}</td>
-                  <td className="py-4 px-8">{msg.email}</td>
-                  <td className="py-4 px-8">{msg.phoneNumber}</td>
-                  <td className="py-4 px-8">{msg.messageContent}</td>
-                  <td className="py-4 px-8">{msg.requestNumber}</td>
-                  <td className="py-4 px-8">{new Date(msg.sentAt).toLocaleString()}</td>
-                  <td className="py-4 px-8">{msg.isResolved ? "Yes" : "No"}</td>
+        {loading ? (
+          <div className="flex justify-center items-center py-8">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+          </div>
+        ) : (
+          <div className="mt-8 overflow-x-auto">
+            <table className="w-full text-right border-collapse border border-gray-300">
+              <thead>
+                <tr className="bg-gray-100 dark:bg-gray-800">
+                  <th className="py-4 px-8 border border-gray-300">الاسم</th>
+                  <th className="py-4 px-8 border border-gray-300">البريد الإلكتروني</th>
+                  <th className="py-4 px-8 border border-gray-300">رقم الهاتف</th>
+                  <th className="py-4 px-8 border border-gray-300">الرسالة</th>
+                  <th className="py-4 px-8 border border-gray-300">رقم الطلب</th>
+                  <th className="py-4 px-8 border border-gray-300">تاريخ الإرسال</th>
+                  <th className="py-4 px-8 border border-gray-300">تم الحل</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {messages.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="text-center py-4">
+                      لا توجد رسائل مسجلة حالياً.
+                    </td>
+                  </tr>
+                ) : (
+                  messages.map((msg) => (
+                    <tr key={msg.id} className="border-b dark:border-gray-700 hover:bg-gray-50">
+                      <td className="py-4 px-8 border border-gray-300">{msg.name}</td>
+                      <td className="py-4 px-8 border border-gray-300">{msg.email}</td>
+                      <td className="py-4 px-8 border border-gray-300">{msg.phoneNumber}</td>
+                      <td className="py-4 px-8 border border-gray-300">{msg.messageContent}</td>
+                      <td className="py-4 px-8 border border-gray-300">{msg.requestNumber}</td>
+                      <td className="py-4 px-8 border border-gray-300">
+                        {new Date(msg.sentAt).toLocaleString("ar-EG")}
+                      </td>
+                      <td className="py-4 px-8 border border-gray-300">
+                        {msg.isResolved ? "نعم" : "لا"}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
       </Card>
     </div>
   );
