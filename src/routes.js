@@ -6,6 +6,7 @@ import Home from "views/Home";
 import Messages from "views/Messages";
 import Notifications from "views/Notifications";
 import Profession from "views/Profession";
+import Ratings from "views/Rating";
 import Recommendation from "views/Recommendation";
 import Users from "views/Users";
 import Verifications from "views/Verifications";
@@ -59,6 +60,14 @@ const routes = [
     icon: <IoTicketSharp className="h-6 w-6" />,
     path: "verifications",
     component: <Verifications />,
+  },
+  
+  {
+    name: "التقييمات",
+    layout: "/admin",
+    icon: <IoTicketSharp className="h-6 w-6" />,
+    path: "ratings",
+    component: <Ratings />,
   },
   {
     name: "إرسال إشعار",

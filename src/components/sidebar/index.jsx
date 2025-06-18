@@ -11,6 +11,7 @@ import Craftsmen from "views/Craftsmen";
 import Verifications from "views/Verifications";
 import Notifications from "views/Notifications";
 import Home from "views/Home";
+import Ratings from "views/Rating";
 
 
 const routes = [
@@ -63,6 +64,14 @@ const routes = [
     path: "verifications",
     component: <Verifications />,
   },
+
+    {
+      name: "التقييمات",
+      layout: "/admin",
+      icon: <IoTicketSharp className="h-6 w-6" />,
+      path: "ratings",
+      component: <Ratings />,
+    },
   {
     name: "إرسال إشعار",
     layout: "/admin",
