@@ -5,15 +5,7 @@ import Swal from "sweetalert2";
 const Profession = () => {
   const [professions, setProfessions] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState({ id: 0, name: "" });
-  const [editMode, setEditMode] = useState(false);
-
   const token = localStorage.getItem("token");
-
-  const headers = {
-    "Authorization": `Bearer ${token}`,
-    "Content-Type": "application/json-patch+json",
-  };
 
   const fetchProfessions = async () => {
     setLoading(true);
@@ -41,34 +33,124 @@ const Profession = () => {
     if (token) fetchProfessions();
   }, [token]);
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+  const showAddModal = () => {
+    Swal.fire({
+      title: 'إضافة مهنة جديدة',
+      html: `
+        <div class="text-right">
+          <input id="name" type="text" placeholder="اسم المهنة" class="swal2-input w-full text-right">
+          <input id="image" type="file" accept="image/*" class="swal2-file mt-2">
+          <div id="imagePreview" class="mt-2"></div>
+        </div>
+      `,
+      focusConfirm: false,
+      preConfirm: () => {
+        const name = Swal.getPopup().querySelector('#name').value;
+        const image = Swal.getPopup().querySelector('#image').files[0];
+        
+        if (!name.trim()) {
+          Swal.showValidationMessage('اسم المهنة مطلوب');
+          return false;
+        }
+        
+        return { name, image };
+      },
+      didOpen: () => {
+        const imageInput = Swal.getPopup().querySelector('#image');
+        imageInput.addEventListener('change', (e) => {
+          const file = e.target.files[0];
+          const preview = Swal.getPopup().querySelector('#imagePreview');
+          preview.innerHTML = '';
+          
+          if (file) {
+            const img = document.createElement('img');
+            img.src = URL.createObjectURL(file);
+            img.className = 'h-20 w-20 object-cover rounded';
+            preview.appendChild(img);
+          }
+        });
+      }
+    }).then((result) => {
+      if (result.isConfirmed) {
+        createProfession(result.value);
+      }
+    });
   };
 
-  const createProfession = async () => {
-    if (!form.name.trim()) {
-      Swal.fire({
-        icon: "error",
-        title: "خطأ",
-        text: "اسم المهنة مطلوب",
-        confirmButtonText: "حسناً",
-      });
-      return;
+  const showEditModal = (prof) => {
+    Swal.fire({
+      title: 'تعديل المهنة',
+      html: `
+        <div class="text-right">
+          <input id="name" type="text" placeholder="اسم المهنة" 
+            value="${prof.name}" class="swal2-input w-full text-right">
+          <input id="image" type="file" accept="image/*" class="swal2-file mt-2">
+          <div id="imagePreview" class="mt-2">
+            ${prof.imagePath ? 
+              `<img src="https://sani3ywebapiv1.runasp.net${prof.imagePath}" 
+                alt="${prof.name}" class="h-20 w-20 object-cover rounded">` : ''}
+          </div>
+        </div>
+      `,
+      focusConfirm: false,
+      preConfirm: () => {
+        const name = Swal.getPopup().querySelector('#name').value;
+        const image = Swal.getPopup().querySelector('#image').files[0];
+        
+        if (!name.trim()) {
+          Swal.showValidationMessage('اسم المهنة مطلوب');
+          return false;
+        }
+        
+        return { id: prof.id, name, image };
+      },
+      didOpen: () => {
+        const imageInput = Swal.getPopup().querySelector('#image');
+        imageInput.addEventListener('change', (e) => {
+          const file = e.target.files[0];
+          const preview = Swal.getPopup().querySelector('#imagePreview');
+          
+          if (file) {
+            const img = document.createElement('img');
+            img.src = URL.createObjectURL(file);
+            img.className = 'h-20 w-20 object-cover rounded';
+            preview.innerHTML = '';
+            preview.appendChild(img);
+          }
+        });
+      }
+    }).then((result) => {
+      if (result.isConfirmed) {
+        updateProfession(result.value);
+      }
+    });
+  };
+
+  const createProfession = async ({ name, image }) => {
+    const formData = new FormData();
+    formData.append("Name", name);
+    if (image) {
+      formData.append("ImagePath", image);
     }
+
     try {
       const res = await fetch("https://sani3ywebapiv1.runasp.net/api/Profession", {
         method: "POST",
-        headers,
-        body: JSON.stringify({  Name: form.name }),
+        headers: {
+          "Authorization": `Bearer ${token}`,
+        },
+        body: formData,
       });
+      
       if (!res.ok) throw new Error("فشل في إنشاء المهنة");
+      
       Swal.fire({
         icon: "success",
         title: "تم الإنشاء",
         text: "تم إنشاء المهنة بنجاح",
         confirmButtonText: "حسناً",
       });
-      setForm({ id: 0, name: "" });
+      
       fetchProfessions();
     } catch (error) {
       console.error("خطأ في إنشاء المهنة:", error);
@@ -81,31 +163,31 @@ const Profession = () => {
     }
   };
 
-  const updateProfession = async () => {
-    if (!form.name.trim()) {
-      Swal.fire({
-        icon: "error",
-        title: "خطأ",
-        text: "اسم المهنة مطلوب",
-        confirmButtonText: "حسناً",
-      });
-      return;
+  const updateProfession = async ({ id, name, image }) => {
+    const formData = new FormData();
+    formData.append("Name", name);
+    if (image) {
+      formData.append("ImagePath", image);
     }
+
     try {
-      const res = await fetch(`https://sani3ywebapiv1.runasp.net/api/Profession/${form.id}`, {
+      const res = await fetch(`https://sani3ywebapiv1.runasp.net/api/Profession/${id}`, {
         method: "PUT",
-        headers,
-        body: JSON.stringify({ id: form.id, name: form.name }),
+        headers: {
+          "Authorization": `Bearer ${token}`,
+        },
+        body: formData,
       });
+      
       if (!res.ok) throw new Error("فشل في تحديث المهنة");
+      
       Swal.fire({
         icon: "success",
         title: "تم التحديث",
         text: "تم تحديث المهنة بنجاح",
         confirmButtonText: "حسناً",
       });
-      setForm({ id: 0, name: "" });
-      setEditMode(false);
+      
       fetchProfessions();
     } catch (error) {
       console.error("خطأ في تحديث المهنة:", error);
@@ -156,66 +238,18 @@ const Profession = () => {
     }
   };
 
-  // بدء التحرير
-  const editHandler = (prof) => {
-    setForm({ id: prof.id, name: prof.name });
-    setEditMode(true);
-  };
-
-  const cancelEdit = () => {
-    setForm({ id: 0, name: "" });
-    setEditMode(false);
-  };
-
   return (
     <div className="mt-5">
       <Card extra="w-full pb-10 p-4 h-full">
         <header className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-bold text-navy-700 dark:text-white">المهن</h2>
           <button
-            onClick={() => {
-              setForm({ id: 0, name: "" });
-              setEditMode(false);
-            }}
-            className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 transition-colors"
+            onClick={showAddModal}
+            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
           >
-            مسح
+            إضافة مهنة جديدة
           </button>
         </header>
-
-        <div className="mb-6">
-          <input
-            type="text"
-            name="name"
-            placeholder="اسم المهنة"
-            value={form.name}
-            onChange={handleChange}
-            className="border p-2 rounded mr-2 w-full max-w-xs focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-right"
-          />
-          {editMode ? (
-            <div className="flex space-x-2 space-x-reverse mt-2">
-              <button
-                onClick={updateProfession}
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-              >
-                تحديث
-              </button>
-              <button
-                onClick={cancelEdit}
-                className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500 transition-colors"
-              >
-                إلغاء
-              </button>
-            </div>
-          ) : (
-            <button
-              onClick={createProfession}
-              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors mt-2"
-            >
-              إضافة
-            </button>
-          )}
-        </div>
 
         {loading ? (
           <div className="flex justify-center items-center py-8">
@@ -228,13 +262,14 @@ const Profession = () => {
                 <tr className="bg-gray-100">
                   <th className="border border-gray-300 py-2 px-4">المعرف</th>
                   <th className="border border-gray-300 py-2 px-4">الاسم</th>
+                  <th className="border border-gray-300 py-2 px-4">الصورة</th>
                   <th className="border border-gray-300 py-2 px-4">الإجراءات</th>
                 </tr>
               </thead>
               <tbody>
                 {professions.length === 0 ? (
                   <tr>
-                    <td colSpan={3} className="text-center py-4">
+                    <td colSpan={4} className="text-center py-4">
                       لا توجد مهن مسجلة حالياً.
                     </td>
                   </tr>
@@ -244,9 +279,18 @@ const Profession = () => {
                       <td className="border border-gray-300 py-2 px-4">{prof.id}</td>
                       <td className="border border-gray-300 py-2 px-4">{prof.name}</td>
                       <td className="border border-gray-300 py-2 px-4">
+                        {prof.imagePath && (
+                          <img 
+                            src={`https://sani3ywebapiv1.runasp.net${prof.imagePath}`} 
+                            alt={prof.name} 
+                            className="h-10 w-10 object-cover rounded"
+                          />
+                        )}
+                      </td>
+                      <td className="border border-gray-300 py-2 px-4">
                         <div className="flex space-x-2 space-x-reverse">
                           <button
-                            onClick={() => editHandler(prof)}
+                            onClick={() => showEditModal(prof)}
                             className="px-3 py-1 bg-yellow-400 rounded hover:bg-yellow-500 transition-colors"
                           >
                             تعديل
