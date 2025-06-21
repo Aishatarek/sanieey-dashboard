@@ -7,7 +7,6 @@ const Verifications = () => {
   const [loading, setLoading] = useState(false);
   const token = localStorage.getItem("token");
 
-  // جلب طلبات التحقق المعلقة
   const fetchPendingVerifications = async () => {
     setLoading(true);
     try {
@@ -36,7 +35,6 @@ const Verifications = () => {
     }
   };
 
-  // الموافقة على طلب التحقق
   const approveVerification = async (id) => {
     try {
       const result = await Swal.fire({
@@ -80,7 +78,6 @@ const Verifications = () => {
     }
   };
 
-  // رفض طلب التحقق
   const rejectVerification = async (id) => {
     try {
       const result = await Swal.fire({
@@ -125,7 +122,6 @@ const Verifications = () => {
     }
   };
 
-  // عرض تفاصيل طلب التحقق في popup
   const showVerificationDetails = (verification) => {
     Swal.fire({
       title: `تفاصيل طلب التحقق #${verification.id}`,
@@ -133,41 +129,26 @@ const Verifications = () => {
         <div class="text-right space-y-3">
           <div class="flex justify-center">
             <img 
-              src="${verification.craftsman.profileImage ? `https://sani3ywebapiv1.runasp.net${verification.craftsman.profileImage}` : '/img/default-profile.png'}" 
+              src="${verification.profileImagePath ? `https://sani3ywebapiv1.runasp.net${verification.profileImagePath}` : '/img/default-profile.png'}" 
               alt="صورة الحرفي" 
               class="w-32 h-32 rounded-full object-cover border-2 border-gray-200"
             />
           </div>
           
-          <p><strong>اسم الحرفي:</strong> ${verification.craftsman.fullName}</p>
-          <p><strong>الحرفة:</strong> ${verification.craftsman.profession}</p>
-          <p><strong>المحافظة:</strong> ${verification.craftsman.governorate}</p>
-          <p><strong>الموقع:</strong> ${verification.craftsman.location}</p>
-          <p><strong>البريد الإلكتروني:</strong> ${verification.craftsman.email}</p>
-          <p><strong>رقم الهاتف:</strong> ${verification.craftsman.phoneNumer}</p>
+          <p><strong>اسم الحرفي:</strong> ${verification.fullName || 'غير متوفر'}</p>
+          <p><strong>معرف الحرفي:</strong> ${verification.craftsmanId || 'غير متوفر'}</p>
           
           <div class="mt-4">
-            <strong>صور البطاقة الشخصية:</strong>
-            <div class="grid grid-cols-2 gap-2 mt-2">
-              ${verification.cardImages.map(img => `
-                <img src="https://sani3ywebapiv1.runasp.net${img}" class="w-full h-32 object-contain bg-gray-100 rounded border" />
-              `).join('')}
+            <strong>صورة البطاقة الشخصية:</strong>
+            <div class="mt-2">
+              <img src="https://sani3ywebapiv1.runasp.net${verification.cardImagePath}" class="w-full h-48 object-contain bg-gray-100 rounded border" />
             </div>
           </div>
           
-          <div class="mt-4">
-            <strong>صور الشهادات:</strong>
-            ${verification.certificateImages && verification.certificateImages.length > 0 ? `
-              <div class="grid grid-cols-2 gap-2 mt-2">
-                ${verification.certificateImages.map(img => `
-                  <img src="https://sani3ywebapiv1.runasp.net${img}" class="w-full h-32 object-contain bg-gray-100 rounded border" />
-                `).join('')}
-              </div>
-            ` : '<p class="text-gray-500">لا توجد شهادات مرفقة</p>'}
-          </div>
+          <p class="mt-2"><strong>تاريخ التقديم:</strong> ${new Date(verification.submittedAt).toLocaleString()}</p>
         </div>
       `,
-      width: '800px',
+      width: '700px',
       showConfirmButton: false,
       showCloseButton: true
     });
@@ -204,9 +185,8 @@ const Verifications = () => {
                   <tr className="bg-gray-100">
                     <th className="p-3 border">#</th>
                     <th className="p-3 border">الحرفي</th>
-                    <th className="p-3 border">الحرفة</th>
-                    <th className="p-3 border">المحافظة</th>
-                    <th className="p-3 border">تاريخ الطلب</th>
+                    <th className="p-3 border">معرف الحرفي</th>
+                    <th className="p-3 border">تاريخ التقديم</th>
                     <th className="p-3 border">الإجراءات</th>
                   </tr>
                 </thead>
@@ -215,18 +195,17 @@ const Verifications = () => {
                     <tr key={verification.id} className="hover:bg-gray-50">
                       <td className="p-3 border">{index + 1}</td>
                       <td className="p-3 border">
-                        <div className="flex items-center">
+                        <div className="flex items-center gap-2">
                           <img 
-                            src={verification.craftsman.profileImage ? `https://sani3ywebapiv1.runasp.net${verification.craftsman.profileImage}` : '/img/default-profile.png'} 
+                            src={verification.profileImagePath ? `https://sani3ywebapiv1.runasp.net${verification.profileImagePath}` : '/img/default-profile.png'} 
                             alt="صورة الحرفي" 
-                            className="w-10 h-10 rounded-full object-cover mr-2"
+                            className="w-10 h-10 rounded-full object-cover"
                           />
-                          {verification.craftsman.fullName}
+                          {verification.fullName}
                         </div>
                       </td>
-                      <td className="p-3 border">{verification.craftsman.profession}</td>
-                      <td className="p-3 border">{verification.craftsman.governorate}</td>
-                      <td className="p-3 border">{new Date(verification.requestDate).toLocaleDateString()}</td>
+                      <td className="p-3 border">{verification.craftsmanId}</td>
+                      <td className="p-3 border">{new Date(verification.submittedAt).toLocaleDateString()}</td>
                       <td className="p-3 border">
                         <div className="flex gap-2 justify-end">
                           <button
