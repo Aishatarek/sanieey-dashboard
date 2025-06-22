@@ -7,6 +7,10 @@ const Messages = () => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    fetchMessages();
+  }, []);
+
+  const fetchMessages = async () => {
     const token = localStorage.getItem("token");
 
     if (!token) {
@@ -20,13 +24,56 @@ const Messages = () => {
       return;
     }
 
-    const fetchMessages = async () => {
-      setLoading(true);
-      try {
-        const res = await fetch(
-          "https://sani3ywebapiv1.runasp.net/api/AdminDashboard/GetContactMessages",
+    setLoading(true);
+    try {
+      const res = await fetch(
+        "https://sani3ywebapiv1.runasp.net/api/AdminDashboard/GetContactMessages",
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "application/json",
+          },
+        }
+      );
+
+      if (!res.ok) {
+        throw new Error(`فشل الطلب: ${res.status}`);
+      }
+
+      const data = await res.json();
+      setMessages(data);
+    } catch (err) {
+      console.error("خطأ في جلب الرسائل:", err);
+      Swal.fire({
+        icon: "error",
+        title: "خطأ",
+        text: "حدث خطأ أثناء جلب الرسائل",
+        confirmButtonText: "حسناً",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResolve = async (requestNumber) => {
+    const token = localStorage.getItem("token");
+    
+    try {
+      const result = await Swal.fire({
+        title: "هل أنت متأكد؟",
+        text: "هل تريد حقاً حل هذا الطلب؟",
+        icon: "question",
+        showCancelButton: true,
+        confirmButtonText: "نعم، حل الطلب",
+        cancelButtonText: "إلغاء",
+      });
+
+      if (result.isConfirmed) {
+        const response = await fetch(
+          `https://sani3ywebapiv1.runasp.net/api/AdminDashboard/resolve/${requestNumber}`,
           {
-            method: "GET",
+            method: "POST",
             headers: {
               Authorization: `Bearer ${token}`,
               Accept: "application/json",
@@ -34,27 +81,30 @@ const Messages = () => {
           }
         );
 
-        if (!res.ok) {
-          throw new Error(`فشل الطلب: ${res.status}`);
+        if (!response.ok) {
+          throw new Error(`فشل الطلب: ${response.status}`);
         }
 
-        const data = await res.json();
-        setMessages(data);
-      } catch (err) {
-        console.error("خطأ في جلب الرسائل:", err);
-        Swal.fire({
-          icon: "error",
-          title: "خطأ",
-          text: "حدث خطأ أثناء جلب الرسائل",
+        await Swal.fire({
+          icon: "success",
+          title: "تم بنجاح",
+          text: "تم حل الطلب بنجاح",
           confirmButtonText: "حسناً",
         });
-      } finally {
-        setLoading(false);
-      }
-    };
 
-    fetchMessages();
-  }, []);
+        // Refresh the messages list
+        fetchMessages();
+      }
+    } catch (err) {
+      console.error("خطأ في حل الطلب:", err);
+      Swal.fire({
+        icon: "error",
+        title: "خطأ",
+        text: "حدث خطأ أثناء حل الطلب",
+        confirmButtonText: "حسناً",
+      });
+    }
+  };
 
   return (
     <div className="mt-5">
@@ -81,12 +131,13 @@ const Messages = () => {
                   <th className="py-4 px-8 border border-gray-300">رقم الطلب</th>
                   <th className="py-4 px-8 border border-gray-300">تاريخ الإرسال</th>
                   <th className="py-4 px-8 border border-gray-300">تم الحل</th>
+                  <th className="py-4 px-8 border border-gray-300">إجراءات</th>
                 </tr>
               </thead>
               <tbody>
                 {messages.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="text-center py-4">
+                    <td colSpan={8} className="text-center py-4">
                       لا توجد رسائل مسجلة حالياً.
                     </td>
                   </tr>
@@ -103,6 +154,16 @@ const Messages = () => {
                       </td>
                       <td className="py-4 px-8 border border-gray-300">
                         {msg.isResolved ? "نعم" : "لا"}
+                      </td>
+                      <td className="py-4 px-8 border border-gray-300">
+                        {!msg.isResolved && (
+                          <button
+                            onClick={() => handleResolve(msg.requestNumber)}
+                            className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
+                          >
+                            حل الطلب
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))
