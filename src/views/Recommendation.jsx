@@ -8,6 +8,9 @@ const Recommendation = () => {
   const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [professions, setProfessions] = useState([]);
+  const [statusFilter, setStatusFilter] = useState("all"); // "all", "0", "1", "2"
+  const [filteredRecommendations, setFilteredRecommendations] = useState([]);
+
   const [formData, setFormData] = useState({
     FirstName: "",
     LastName: "",
@@ -69,6 +72,24 @@ const Recommendation = () => {
       setLoading(false);
     }
   };
+ const updateCraftsmanData = async (recommendation) => {
+    try {
+     
+      showCraftsmanForm(recommendation, true, {
+        id: recommendation.craftsmanId, 
+        firstName: recommendation.craftsmanFirstName,
+        lastName: recommendation.craftsmanLastName,
+        governorate: recommendation.governorate,
+        location: recommendation.location,
+        professionId: recommendation.professionId,
+        phoneNumber: recommendation.phoneNumber,
+        email: "" // يمكنك جلب البريد من API إذا كان متاحاً
+      });
+    } catch (error) {
+      console.error('خطأ في جلب بيانات الحرفي:', error);
+      showAlert('error', 'خطأ', 'حدث خطأ أثناء جلب بيانات الحرفي');
+    }
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -120,6 +141,15 @@ const Recommendation = () => {
       setLoading(false);
     }
   };
+  useEffect(() => {
+    if (statusFilter === "all") {
+      setFilteredRecommendations(pendingRecommendations);
+    } else {
+      setFilteredRecommendations(
+        pendingRecommendations.filter(r => r.status.toString() === statusFilter)
+      );
+    }
+  }, [statusFilter, pendingRecommendations]);
 
   const showCraftsmanForm = (recommendation) => {
     setSelectedRecommendation(recommendation);
@@ -254,6 +284,16 @@ const Recommendation = () => {
           >
             تحديث البيانات
           </button>
+          <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-4 py-2 border rounded-lg"
+            >
+              <option value="all">جميع الحالات</option>
+              <option value="0">المعلقة</option>
+              <option value="1">المقبولة</option>
+              <option value="2">المرفوضة</option>
+            </select>
         </div>
         
         {loading ? (
@@ -262,7 +302,7 @@ const Recommendation = () => {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            {pendingRecommendations.length === 0 ? (
+            {filteredRecommendations.length === 0 ? (
               <p className="text-gray-500 text-center py-8">لا توجد توصيات معلقة حالياً</p>
             ) : (
               <>
@@ -279,7 +319,7 @@ const Recommendation = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {pendingRecommendations.map((recommendation) => (
+                  {filteredRecommendations.map((recommendation) => (
                       <tr key={recommendation.id} className="hover:bg-gray-50">
                         <td className="p-3 border">{recommendation.id}</td>
                         <td className="p-3 border">{recommendation.craftsmanFirstName} {recommendation.craftsmanLastName}</td>
@@ -315,6 +355,14 @@ const Recommendation = () => {
                             >
                               رفض
                             </button>
+                            {recommendation.status === 1 && (
+                              <button
+                                onClick={() => updateCraftsmanData(recommendation)}
+                                className="px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors"
+                              >
+                                تحديث بيانات
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>
