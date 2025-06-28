@@ -150,10 +150,23 @@ const Recommendation = () => {
         cancelButtonText: 'إلغاء',
         reverseButtons: true
       });
-      
       if (result.isConfirmed) {
+        const response = await fetch(`https://sani3ywebapiv1.runasp.net/api/Recommendation/approve/${id}`, { 
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error('فشل في الموافقة على التوصية');
+        }
+        
         const recommendation = pendingRecommendations.find(r => r.id === id);
         showCraftsmanForm(recommendation);
+      }
+      if (result.isConfirmed) {
+
       }
     } catch (error) {
       console.error('خطأ في الموافقة على التوصية:', error);
